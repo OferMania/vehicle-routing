@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <iostream>
 #include <limits>
+#include <vector>
 
 int EvaluateShared::validateSolutionSchedules(const std::vector<std::vector<size_t>>& solutionSchedules, size_t numCoordinates) {
     size_t numLoads = numCoordinates - 1;   // HQ isn't a load, but all other coordinates are
@@ -81,5 +82,20 @@ void EvaluateShared::outputSolutionSchedules(const std::vector<std::vector<size_
             seenFirst = true;
         }
         std::cout << "]" << std::endl;
+    }
+}
+
+void EvaluateShared::outputScheduleToLog(std::ofstream* log, const std::vector<std::vector<size_t>>& solutionSchedules) {
+    for (const auto& schedule : solutionSchedules) {
+        *log << "[";
+        bool seenFirst = false;
+        for (size_t loadId : schedule) {
+            if (seenFirst) {
+                *log << ",";
+            }
+            *log << loadId;
+            seenFirst = true;
+        }
+        *log << "]" << std::endl;
     }
 }

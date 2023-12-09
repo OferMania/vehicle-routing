@@ -33,6 +33,9 @@ void Graph::build_coordinates() {
 
     for (size_t ii = 1; ii < _lines.size(); ++ii) {
         std::string line = _lines[ii];
+        if (line.empty()) {
+            continue;
+        }
         std::stringstream ss(line);
         std::vector<std::string> args;
         std::string piece;
@@ -120,7 +123,8 @@ void Graph::build_distance_matrix() {
     }
 }
 
-std::vector<std::vector<size_t>> Graph::plan_paths(const Probs& probs) {
+std::vector<std::vector<size_t>> Graph::plan_paths(Probs& probs) {
+    *_log << "Running plan_paths with: " << probs.to_string() << std::endl;
     std::unordered_set<size_t> loads;
     for (size_t ii = 1; ii < _coordinates.size(); ++ii) {
         loads.insert(ii);
@@ -143,28 +147,95 @@ std::vector<std::vector<size_t>> Graph::plan_paths(const Probs& probs) {
     return solution;
 }
 
-std::vector<size_t> Graph::plan_path_for_driver(const std::unordered_set<size_t>& candidate_loads, const Probs& probs) {
+std::vector<size_t> Graph::plan_path_for_driver(const std::unordered_set<size_t>& candidate_loads, Probs& probs) {
+    *_log << "Running plan_path_for_driver with loads: ";
+    for (size_t load_id : candidate_loads) {
+        *_log << load_id << ", ";
+    }
+    *_log << std::endl;
+
     std::unordered_set<size_t> loads = candidate_loads;
+    const std::vector<long double>* hq_distances = &_distance_matrix[0];
     size_t current_load = 0; // we start at HQ
     std::vector<size_t> fallback;  // this is always a solution that gets us back within the _max_minutes
     long double fallback_minutes = 0;
 
-    std::vector<size_t> cumulative;  // this is always a solution that gets us back within the _max_minutes
-    long double cumulative_minutes = 0;
+    std::vector<size_t> cumulative;  // where we want to explore so far if possible. Note we might not be able to return to HQ & only detect if AFTER visiting a node
+    long double cumulative_minutes = 0; // minutes for the solution
 
     while (cumulative_minutes < _max_minutes) {
-        std::vector<long double>* current_distances = &_distance_matrix[current_load];
+        *_log << "Current load: " << current_load << std::endl;
+        *_log << "Cumulative minutes: " << cumulative_minutes << std::endl;
+        const std::vector<long double>* current_distances = &_distance_matrix[current_load];
+
+        // Check if we can return to HQ from where we're at. If yes, that's the new fallback
+        // solution in case we later make a cumulative that cannot proceed (due to returning
+        // to HQ exceeding max_minutes)
+        bool canReturnToHq = (cumulative_minutes + current_distances->at(0) < _max_minutes);
+        if (canReturnToHq) {
+            *_log << "Can return to hq from current_node, updating fallback" << std::endl;
+            fallback = cumulative;
+            fallback_minutes = cumulative_minutes + current_distances->at(0);
+            *_log << "fallback_minutes = " << fallback_minutes << std::endl;
+        }
+
+        // For the loadId's in loads, none of which are HQ, and NONE of which match current_load, only consider loadId's we can reach from the current_load without exceeding max_minutes
         std::unordered_set<size_t> reachable_loads;
-        // only consider neighbors where cumulative_minutes + current_distances->at(load) < _distance_matrix
-        // if reachable_loads is empty, consider going home, unless it exceeds the distance limit, then use the fallback solution and we're done!
-        // if current node can travel to HQ without exceeding max minutes, then update fallback and fallback_minutes (former is cumulative, latter is cumulative_minutes + current_distances->at(0))
-        // select a scheme, ie Scheme scheme = probs.select_scheme(_r, at_home);
-        // if scheme cannot be chosen at all, use the fallback and we're done, otherwise
-        // pick a next_load via probs.implement_scheme(_r, loads);
-        // update cumulative and cumulative_minutes, cumulative appends next_load, and cumulative_minutes += current_distances->at(next_load)
-        // update current_load to be next_load & remove current_load from loads
-        // if current_load just got set to zero, check the cumulative_minutes, if it's under _max_minutes, then use cumulative and we're done
+        for (size_t loadId : loads) {
+            if ((loadId != current_load) && cumulative_minutes + current_distances->at(loadId) < _max_minutes) {
+                reachable_loads.insert(loadId);
+            }
+        }
+
+        // Do we have any new reachable_loads to take on? If not, use the fallback.
+        if (reachable_loads.empty()) {
+            *_log << "No more reachable loads, using fallback" << std::endl;
+            return fallback;
+        }
+
+        // select a scheme, note the if current_load is 0 (aka HQ), then we avoid returning home, aka probHome is ignored. Otherwise probHome is considered.
+        Scheme scheme = probs.select_scheme(/* at_hq = */ (current_load == 0));
+        *_log << "Scheme chosen is: " << static_cast<int>(scheme) << std::endl;
+
+        // This shouldn't happen, but just in case... If a scheme cannot be chosen, ie it's unknown, then use the fallback and we're done
+        if (scheme == Scheme::Unknown) {
+            *_log << "Unknown scheme chosen, using fallback" << std::endl;
+            return fallback;
+        }
+
+        // pick a next_load to visit
+        size_t next_load = probs.implement_scheme_and_select_next_load(scheme, reachable_loads, current_distances, hq_distances);
+        *_log << "Next load has been chosen to be: " << next_load << std::endl;
+
+        // next_load got chosen, update cumulative, cumulative_minutes, loads, and current_load
+        if (next_load != 0) {
+            // We have a new load to consider for the driver's path, update the cumulative stats, then update loads and current_load
+            cumulative.push_back(next_load);
+            cumulative_minutes += current_distances->at(next_load);
+
+            loads.erase(next_load);
+            current_load = next_load;
+        } else {
+            // We got instructed to go to HQ after visiting a series of non-HQ nodes. Don't update cumulative (it's implied) or loads (which doesn't have zero), but do update the cumulative_minutes and current_load. This means the path for the driver is done
+            cumulative_minutes += current_distances->at(next_load);
+            current_load = next_load;
+            break;
+        }
     }
 
-    // if we got here, use the fallback
+    // if we got here, it might've been deliberate, so check if we can return to HQ from where we're at without exceeding max_minutes
+    // (if we're already at HQ, then _distance_matrix[current_load][0] is zero). If we CAN return to HQ, that's our new fallback, otherwise,
+    // keep existing fallback path
+    if ((cumulative_minutes < _max_minutes) && (cumulative_minutes + _distance_matrix[current_load][0] < _max_minutes)) {
+        *_log << "Done iterating, but cumulative minutes plus distance to HQ doesn't exceed max minutes, so updating fallback" << std::endl;
+        fallback = cumulative;
+        fallback_minutes = cumulative_minutes + _distance_matrix[current_load][0];
+        *_log << "fallback_minutes = " << fallback_minutes << std::endl;
+    }
+
+    // If we reach here, we found a longest possible fallback path for the driver without exceeding _max_minutes
+    // Note our paths generally favor utilizing existing drivers as far as we can, but high probHq gives us some leeway for scenarios where
+    // the distance between loads is high enough to consider favoring more drivers.
+    *_log << "Iterated as far as we can go w this driver, outputting the fallback path that's within max minutes" << std::endl;
+    return fallback;
 }

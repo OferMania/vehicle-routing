@@ -30,6 +30,7 @@ add_executable(
   ${SRC_DIR}/main.cpp
   ${SRC_DIR}/graph.cpp
   ${SRC_DIR}/evaluate_shared.cpp
+  ${SRC_DIR}/scheme.cpp
 )
 
 enable_testing()
@@ -39,6 +40,8 @@ add_executable(
   ${SRC_DIR}/main_tests.cpp
   ${SRC_DIR}/graph_tests.cpp
   ${SRC_DIR}/graph.cpp
+  ${SRC_DIR}/evaluate_shared.cpp
+  ${SRC_DIR}/scheme.cpp
 )
 
 target_link_libraries(

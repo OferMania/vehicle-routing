@@ -1,46 +1,13 @@
 #pragma once
 
 #include <fstream>
+#include <random>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
-struct Coordinate {
-    long double pickupX;
-    long double pickupY;
-    long double dropOffX;
-    long double dropOffY;
-
-    Coordinate()
-    : pickupX(0)
-    , pickupY(0)
-    , dropOffX(0)
-    , dropOffY(0) {}
-};
-
-enum class Scheme {
-    Unknown,
-    Home,
-    GreedyNearest,
-    OnwayNearest,
-    WeightedNearest,
-    Random,
-};
-
-struct Probs {
-    int probHome;
-    int probGreedyNearest;
-    int probOnwayNearest;
-    int probWeightedNearest;
-    int probRandom;
-
-    Probs(int h, int g, int o, int w, int r)
-    : probHome(h)
-    , probGreedyNearest(g)
-    , probOnwayNearest(o)
-    , probWeightedNearest(w)
-    , probRandom(r) {}
-};
+#include "coordinate.h"
+#include "scheme.h"
 
 class Graph {
 public:
@@ -53,8 +20,7 @@ public:
 
     void debug();
 
-    std::vector<std::vector<size_t>> plan_paths(const Probs& probs);
-    std::vector<size_t> plan_path_for_driver(const std::unordered_set<size_t>& loads, const Probs& probs);
+    std::vector<std::vector<size_t>> plan_paths(Probs& probs);
 
     size_t numCoordinates() const {
         return _coordinates.size();
@@ -67,6 +33,8 @@ public:
 private:
     void build_coordinates();
     void build_distance_matrix();
+
+    std::vector<size_t> plan_path_for_driver(const std::unordered_set<size_t>& loads, Probs& probs);
 
     std::vector<std::string> _lines;
     std::ofstream* _log;
