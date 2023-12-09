@@ -3,7 +3,6 @@
 #include <limits>
 
 void Probs::init_goalposts() {
-    _regular_goalposts.push_back(0);
     int sum = 0;
     int nohq_sum = 0;
 
@@ -242,5 +241,16 @@ std::string Probs::to_string() {
     result += ",";
     result += std::to_string(probRandom);
     result += ",";
+    result += "   ";
+    for (int value : _regular_goalposts) {
+        result += std::to_string(value);
+        result += ",";
+    }
+    result += "   ";
+    for (int value : _nonhq_goalposts) {
+        result += std::to_string(value);
+        result += ",";
+    }
+    result += "   ";
     return result;
 }
