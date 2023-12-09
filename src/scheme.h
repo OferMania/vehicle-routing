@@ -17,13 +17,14 @@ enum class Scheme {
 
 class Probs {
 public:
-    Probs(std::mt19937* gen, int h, int g, int o, int w, int r)
+    Probs(std::mt19937* gen, int h, int g, int o, int w, int r, bool htr)
     : generator(gen)
     , probHq(h)
     , probGreedyNearest(g)
     , probOnwayNearest(o)
     , probWeightedNearest(w)
-    , probRandom(r) {
+    , probRandom(r)
+    , hqGoesToRandom(htr) {
         init_goalposts();
     }
 
@@ -42,6 +43,7 @@ private:
     int probOnwayNearest;
     int probWeightedNearest;
     int probRandom;
+    bool hqGoesToRandom;
 
     std::vector<int> _regular_goalposts;
     std::vector<int> _nonhq_goalposts;

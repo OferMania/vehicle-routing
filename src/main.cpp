@@ -38,16 +38,25 @@ int main(int argc, char** argv) {
 
     std::vector<std::pair<Probs, int>> stuff_to_try = {
         // {Probs(&gen, 1, 0, 0, 0, 0), 1},  // do this once (deterministic solution): always go to HQ, each worker never delivers more than 1 load
-        {Probs(&gen, 0, 1, 0, 0, 0), 1},  // do this once (deterministic solution): always greedily deliver the nearest load with a single driver, maximizes load per driver
-        {Probs(&gen, 0, 0, 1, 0, 0), 1},  // do this once (deterministic solution): always greedily deliver the nearest load that's father from HQ (falls back to nearest load), maximizes load per driver
-        {Probs(&gen, 0, 0, 0, 1, 0), 60}, // do this 60x: always go to weighted nearest neighbor if possible, with closer neighbors having higher probability
-        {Probs(&gen, 0, 0, 0, 0, 1), 60}, // do this 60x: always go to a random neighbor if possible
-        {Probs(&gen, 10, 90, 100, 0, 0), 60}, // do this 60x: greedily deliver nearest load with a chance to return early to HQ
-        {Probs(&gen, 10, 0, 0, 190, 0), 60}, // do this 60x: weighted neighbor with a chance to return early to HQ
-        {Probs(&gen, 10, 0, 0, 0, 190), 60}, // do this 60x: random with chance to return early to HQ
-        {Probs(&gen, 10, 45, 45, 100, 0), 60}, // do this 60x: weighted btw nearest neighbor vs weighted nearest with a chance to return early to HQ
-        {Probs(&gen, 10, 45, 45, 0, 100), 60}, // do this 60x: weighted btw nearest neighbor vs random neighbor with a chance to return early to HQ
-        {Probs(&gen, 100, 16, 16, 18, 50), 60}, // do this 60x: bail to HQ half the time, random neighbor quarter of the time, otherwise other schemes
+        {Probs(&gen, 0, 1, 0, 0, 0, false), 1},  // do this once (deterministic solution): always greedily deliver the nearest load with a single driver, maximizes load per driver
+        {Probs(&gen, 0, 0, 1, 0, 0, false), 1},  // do this once (deterministic solution): always greedily deliver the nearest load that's father from HQ (falls back to nearest load), maximizes load per driver
+        {Probs(&gen, 0, 0, 0, 1, 0, false), 60}, // do this 60x: always go to weighted nearest neighbor if possible, with closer neighbors having higher probability
+        {Probs(&gen, 0, 0, 0, 0, 1, false), 60}, // do this 60x: always go to a random neighbor if possible
+        {Probs(&gen, 10, 90, 100, 0, 0, false), 60}, // do this 60x: greedily deliver nearest load with a chance to return early to HQ
+        {Probs(&gen, 10, 0, 0, 190, 0, false), 60}, // do this 60x: weighted neighbor with a chance to return early to HQ
+        {Probs(&gen, 10, 0, 0, 0, 190, false), 60}, // do this 60x: random with chance to return early to HQ
+        {Probs(&gen, 10, 45, 45, 100, 0, false), 30}, // do this 30x: weighted btw nearest neighbor vs weighted nearest with a chance to return early to HQ
+        {Probs(&gen, 10, 45, 45, 0, 100, false), 30}, // do this 30x: weighted btw nearest neighbor vs random neighbor with a chance to return early to HQ
+        {Probs(&gen, 100, 16, 16, 18, 50, false), 30}, // do this 30x: bail to HQ half the time, random neighbor quarter of the time, otherwise other schemes
+
+        {Probs(&gen, 0, 1, 0, 0, 0, true), 10},  // deterministic nearest neighbor w 10 different starting points, maximize load per driver
+        {Probs(&gen, 0, 0, 1, 0, 0, true), 10},  // deterministic nearest load that's father from HQ, but 10 different starting points
+        {Probs(&gen, 10, 90, 0, 0, 0, true), 10},  // 10x nearest neighbors, 10% chance of early exit, different starting points
+        {Probs(&gen, 10, 0, 90, 0, 0, true), 10},  // 10x nearest neighbors farther from HG, 10% chance of early exit, different starting points
+        {Probs(&gen, 10, 45, 45, 100, 0, true), 30}, // do this 30x: different starting points, but weighted btw nearest neighbor vs weighted nearest with a chance to return early to HQ
+        {Probs(&gen, 10, 45, 45, 0, 100, true), 30}, // do this 30x: different starting points, but weighted btw nearest neighbor vs random neighbor with a chance to return early to HQ
+        {Probs(&gen, 100, 16, 16, 18, 50, true), 30}, // do this 30x: different starting points, but bail to HQ half the time, random neighbor quarter of the time, otherwise other schemes
+
     };
     
     long double lowest_cost = std::numeric_limits<long double>::infinity();
@@ -83,6 +92,7 @@ int main(int argc, char** argv) {
                 logstream << "candidate_cost = " << candidate_cost << std::endl;
                 if (candidate_cost < lowest_cost) {
                     logstream << "We found a new best solution" << std::endl;
+                    logstream << "Probs is " << probs.to_string() << std::endl;
                     best_solution = candidate_solution;
                     lowest_cost = candidate_cost;
 

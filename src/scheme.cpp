@@ -45,6 +45,9 @@ Scheme Probs::select_scheme(bool at_hq) {
     }
 
     if (at_hq) {
+        if (hqGoesToRandom) {
+            return Scheme::Random;
+        }
         std::uniform_int_distribution<int> distribution(1, _nonhq_sum);
         int random_num = distribution(*generator);
         size_t chosen_index = _nonhq_goalposts.size();  // default to an invalid choice
@@ -240,6 +243,8 @@ std::string Probs::to_string() {
     result += std::to_string(probWeightedNearest);
     result += ",";
     result += std::to_string(probRandom);
+    result += ",";
+    result += std::to_string(hqGoesToRandom ? 1 : 0);
     result += ",";
     result += "   ";
     for (int value : _regular_goalposts) {
