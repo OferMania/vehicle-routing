@@ -40,14 +40,14 @@ int main(int argc, char** argv) {
         // {Probs(&gen, 1, 0, 0, 0, 0), 1},  // do this once (deterministic solution): always go to HQ, each worker never delivers more than 1 load
         {Probs(&gen, 0, 1, 0, 0, 0), 1},  // do this once (deterministic solution): always greedily deliver the nearest load with a single driver, maximizes load per driver
         {Probs(&gen, 0, 0, 1, 0, 0), 1},  // do this once (deterministic solution): always greedily deliver the nearest load that's father from HQ (falls back to nearest load), maximizes load per driver
-        // {Probs(&gen, 0, 0, 0, 1, 0), 20}, // do this 20x: always go to weighted nearest neighbor if possible, with closer neighbors having higher probability
-        // {Probs(&gen, 0, 0, 0, 0, 1), 20}, // do this 20x: always go to a random neighbor if possible
-        // {Probs(&gen, 10, 90, 100, 0, 0), 20}, // do this 20x: greedily deliver nearest load with a chance to return early to HQ
-        // {Probs(&gen, 10, 0, 0, 190, 0), 20}, // do this 20x: weighted neighbor with a chance to return early to HQ
-        // {Probs(&gen, 10, 0, 0, 0, 190), 20}, // do this 20x: random with chance to return early to HQ
-        // {Probs(&gen, 10, 45, 45, 100, 0), 20}, // do this 20x: weighted btw nearest neighbor vs weighted nearest with a chance to return early to HQ
-        // {Probs(&gen, 10, 45, 45, 0, 100), 20}, // do this 20x: weighted btw nearest neighbor vs random neighbor with a chance to return early to HQ
-        // {Probs(&gen, 100, 16, 16, 18, 50), 20}, // do this 20x: bail to HQ half the time, random neighbor quarter of the time, otherwise other schemes
+        {Probs(&gen, 0, 0, 0, 1, 0), 60}, // do this 60x: always go to weighted nearest neighbor if possible, with closer neighbors having higher probability
+        {Probs(&gen, 0, 0, 0, 0, 1), 60}, // do this 60x: always go to a random neighbor if possible
+        {Probs(&gen, 10, 90, 100, 0, 0), 60}, // do this 60x: greedily deliver nearest load with a chance to return early to HQ
+        {Probs(&gen, 10, 0, 0, 190, 0), 60}, // do this 60x: weighted neighbor with a chance to return early to HQ
+        {Probs(&gen, 10, 0, 0, 0, 190), 60}, // do this 60x: random with chance to return early to HQ
+        {Probs(&gen, 10, 45, 45, 100, 0), 60}, // do this 60x: weighted btw nearest neighbor vs weighted nearest with a chance to return early to HQ
+        {Probs(&gen, 10, 45, 45, 0, 100), 60}, // do this 60x: weighted btw nearest neighbor vs random neighbor with a chance to return early to HQ
+        {Probs(&gen, 100, 16, 16, 18, 50), 60}, // do this 60x: bail to HQ half the time, random neighbor quarter of the time, otherwise other schemes
     };
     
     long double lowest_cost = std::numeric_limits<long double>::infinity();
@@ -88,6 +88,8 @@ int main(int argc, char** argv) {
 
                     logstream << "lowest_cost = " << lowest_cost << std::endl;
                 }
+            } else {
+                logstream << "Candidate fails validation" << std::endl;
             }
         }
     }
