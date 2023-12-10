@@ -30,3 +30,16 @@
 *.exe
 *.out
 *.app
+
+# Ignore build or temp directories
+build/
+build_debug/
+build_release/
+obj/
+temp/
+
+# Ignore backup files
+*.bak
+
+# Ignore vscode settings
+.vscode/
