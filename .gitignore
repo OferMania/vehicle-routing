@@ -33,6 +33,8 @@
 
 # Ignore build or temp directories
 build/
+build_debug/
+build_release/
 obj/
 temp/
 
