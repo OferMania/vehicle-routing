@@ -65,11 +65,11 @@ We build LOTS of candidate solutions in a single run, but keep the best one (ie 
 
 src/main.cpp   ->  Where everything runs
 
-src/graph.cpp  ->  The graph we build from the input file. It's effectively a directed graph with distances for the edges. The plans for drivers are build here also.
+src/graph.cpp  ->  The graph we build from the input file. It's effectively a directed graph with distances for the edges. The plans for drivers are built here also.
 
 src/scheme.cpp ->  Parametrizes Probs to show what probabilities to do which techniques (nearest node, head to HQ, random node, etc). The logic for deciding which "scheme" to do is here, along with the selection of which next node to visit for a plan.
 
-src/coordinate.h  ->  Coordinate struct declaraction used in the graph
+src/coordinate.h  ->  Coordinate struct declaration used in the graph
 
 src/evaluate_shared.cpp  -> Sigh, I couldn't figure out CPython, so I redid some of the logic in evaluateShared.py with one main purpose: Anytime I build a list of paths (aka candidate solution) for the drivers, I want it validated & scored. main.cpp keeps the best solution built and outputs that in the end.
 
