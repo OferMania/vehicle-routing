@@ -79,6 +79,8 @@ The following is a list of things I would attempt if I had more time to work on 
 
 - Unit-testing. I have gtest linked into the project, but it's not doing anything due to *_tests.cpp files being empty. I would make those files perform appropriate unit tests on the classes and behviors of the cpp files. I've shipped MVP's (minimum viable products) without unit tests before, as common in startup land at times, but often write unit tests and maybe also some integration tests as the FIRST THING immediately after MVP, to catch and fix potential issues ASAP. This has saved my hide in the past, so it's often the FIRST improvement I would make to any product.
 
+- Multithreaded. Program only uses 1 thread at the moment, so going multithreaded can allow a lot of computing out different solutions to happen in parallel. If we do this, better to have a different log file per thread in debug build-mode to reduce confusion. Also best to have one thread as the "monitor thread" with other threads trying solutions and sending them to the monitor thread via ring buffers. The monitor thread then keeps the best solution and reports that at the end.
+
 - Parametertrizing VehicleRouting. Add options to toggle things like the number of solutions to try over which behaviors. At the moment, I'm just setting these to what appeared to be reasonable numbers when I was messing with it. I'd likely use tclap here since I like naming arguments.
 
 - Other heuristics. Maybe trying grouping the graph into isolated clusters, in hopes of building more solutions where the number of loads given to a driver is fairly even (or at least do that better than visiting random loads).
