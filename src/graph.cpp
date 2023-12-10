@@ -47,13 +47,17 @@ void Graph::build_coordinates() {
 
         if (args.size() < 3) {
             // We need at least 3 args for this to be a valid route
+#if LOGGING
             *_log << "We need at least 3 args on this line: " << line << std::endl;
+#endif
             continue;
         }
 
         if (args[1].size() < 3 || args[2].size() < 3) {
             // because args[1] and args[2] are expected to be in format (x,y), we expect each of them to have at least 3 characters
+#if LOGGING
             *_log << "Malformed coordinate format on line: " << line << std::endl;
+#endif
             continue;
         }
 
@@ -80,14 +84,18 @@ void Graph::build_coordinates() {
 
         if (coords1.size() < 2 || coords2.size() < 2) {
             // We need X and Y for coords. Too few pieces for coords1 or coords2 is therefore a problem
+#if LOGGING
             *_log << "Malformed dimensions on line: " << line << std::endl;
+#endif
             continue;
         }
 
         size_t index = static_cast<size_t>(std::stoi(args[0]));
         // Sigh, index is typically equivalent to ii, but we try not to take any chances
         if (index < 0 || index >= _lines.size()) {
+#if LOGGING
             *_log << "Invalid index " << index << " found on line: " << line << std::endl;
+#endif
             continue;
         }
 
@@ -124,7 +132,10 @@ void Graph::build_distance_matrix() {
 }
 
 std::vector<std::vector<size_t>> Graph::plan_paths(Probs& probs) {
+#if LOGGING
     *_log << "Running plan_paths with: " << probs.to_string() << std::endl;
+#endif
+
     std::unordered_set<size_t> loads;
     for (size_t ii = 1; ii < _coordinates.size(); ++ii) {
         loads.insert(ii);
@@ -148,24 +159,29 @@ std::vector<std::vector<size_t>> Graph::plan_paths(Probs& probs) {
 }
 
 std::vector<size_t> Graph::plan_path_for_driver(const std::unordered_set<size_t>& candidate_loads, Probs& probs) {
+#if LOGGING
     *_log << "Running plan_path_for_driver with loads: ";
     for (size_t load_id : candidate_loads) {
         *_log << load_id << ", ";
     }
     *_log << std::endl;
+#endif
 
     std::unordered_set<size_t> loads = candidate_loads;
     const std::vector<long double>* hq_distances = &_distance_matrix[0];
     size_t current_load = 0; // we start at HQ
     std::vector<size_t> fallback;  // this is always a solution that gets us back within the _max_minutes
-    long double fallback_minutes = 0;
+    long double fallback_minutes __attribute__((unused)) = 0;  // variable may be unread, but we still want to track it - corresponds to fallback
 
     std::vector<size_t> cumulative;  // where we want to explore so far if possible. Note we might not be able to return to HQ & only detect if AFTER visiting a node
     long double cumulative_minutes = 0; // minutes for the solution
 
     while (cumulative_minutes < _max_minutes) {
+#if LOGGING
         *_log << "Current load: " << current_load << std::endl;
         *_log << "Cumulative minutes: " << cumulative_minutes << std::endl;
+#endif
+
         const std::vector<long double>* current_distances = &_distance_matrix[current_load];
 
         // Check if we can return to HQ from where we're at. If yes, that's the new fallback
@@ -173,10 +189,13 @@ std::vector<size_t> Graph::plan_path_for_driver(const std::unordered_set<size_t>
         // to HQ exceeding max_minutes)
         bool canReturnToHq = (cumulative_minutes + current_distances->at(0) < _max_minutes);
         if (canReturnToHq) {
-            *_log << "Can return to hq from current_node, updating fallback" << std::endl;
             fallback = cumulative;
             fallback_minutes = cumulative_minutes + current_distances->at(0);
+
+#if LOGGING
+            *_log << "Can return to hq from current_node, updating fallback" << std::endl;
             *_log << "fallback_minutes = " << fallback_minutes << std::endl;
+#endif
         }
 
         // For the loadId's in loads, none of which are HQ, and NONE of which match current_load, only consider loadId's we can reach from the current_load without exceeding max_minutes
@@ -189,23 +208,33 @@ std::vector<size_t> Graph::plan_path_for_driver(const std::unordered_set<size_t>
 
         // Do we have any new reachable_loads to take on? If not, use the fallback.
         if (reachable_loads.empty()) {
+#if LOGGING
             *_log << "No more reachable loads, using fallback" << std::endl;
+#endif
             return fallback;
         }
 
         // select a scheme, note the if current_load is 0 (aka HQ), then we avoid returning home, aka probHome is ignored. Otherwise probHome is considered.
         Scheme scheme = probs.select_scheme(/* at_hq = */ (current_load == 0));
+
+#if LOGGING
         *_log << "Scheme chosen is: " << static_cast<int>(scheme) << std::endl;
+#endif
 
         // This shouldn't happen, but just in case... If a scheme cannot be chosen, ie it's unknown, then use the fallback and we're done
         if (scheme == Scheme::Unknown) {
+#if LOGGING
             *_log << "Unknown scheme chosen, using fallback" << std::endl;
+#endif
             return fallback;
         }
 
         // pick a next_load to visit
         size_t next_load = probs.implement_scheme_and_select_next_load(scheme, reachable_loads, current_distances, hq_distances);
+
+#if LOGGING
         *_log << "Next load has been chosen to be: " << next_load << std::endl;
+#endif
 
         // next_load got chosen, update cumulative, cumulative_minutes, loads, and current_load
         if (next_load != 0) {
@@ -227,15 +256,20 @@ std::vector<size_t> Graph::plan_path_for_driver(const std::unordered_set<size_t>
     // (if we're already at HQ, then _distance_matrix[current_load][0] is zero). If we CAN return to HQ, that's our new fallback, otherwise,
     // keep existing fallback path
     if ((cumulative_minutes < _max_minutes) && (cumulative_minutes + _distance_matrix[current_load][0] < _max_minutes)) {
-        *_log << "Done iterating, but cumulative minutes plus distance to HQ doesn't exceed max minutes, so updating fallback" << std::endl;
         fallback = cumulative;
         fallback_minutes = cumulative_minutes + _distance_matrix[current_load][0];
+
+#if LOGGING
+        *_log << "Done iterating, but cumulative minutes plus distance to HQ doesn't exceed max minutes, so updating fallback" << std::endl;
         *_log << "fallback_minutes = " << fallback_minutes << std::endl;
+#endif
     }
 
     // If we reach here, we found a longest possible fallback path for the driver without exceeding _max_minutes
     // Note our paths generally favor utilizing existing drivers as far as we can, but high probHq gives us some leeway for scenarios where
     // the distance between loads is high enough to consider favoring more drivers.
+#if LOGGING
     *_log << "Iterated as far as we can go w this driver, outputting the fallback path that's within max minutes" << std::endl;
+#endif
     return fallback;
 }

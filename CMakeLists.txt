@@ -18,7 +18,16 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Compilation options
-add_compile_options(-Wall -g)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
+# Turn on logging if running in debug mode
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_definitions(LOGGING)
+endif()
+
+###add_compile_options(-Wall -O3 )
 
 # Create a few variables for the folder names, so they are easier to rename in
 # the future
